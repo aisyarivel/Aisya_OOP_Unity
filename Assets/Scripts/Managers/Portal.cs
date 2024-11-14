@@ -1,13 +1,13 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Collections.Generic;
 using System.Collections;
 
 public class Portal : MonoBehaviour
 {
-
-    private Vector3 newPosition; 
     [SerializeField] private float speed = 5f; 
     [SerializeField] private float rotateSpeed = 50f; 
+    private Vector3 newPosition; 
 
     private void Start()
     {
@@ -25,13 +25,32 @@ public class Portal : MonoBehaviour
 
         transform.Rotate(Vector3.forward, rotateSpeed * Time.deltaTime);
 
-        if (PlayerHasWeapon())
+        if (GameObject.Find("Player").GetComponentInChildren<Weapon>() != null)
         {
-            EnablePortal(true);
+            GetComponent<Collider2D>().enabled = true;
+            GetComponent<SpriteRenderer>().enabled = true;
         }
         else
         {
-            EnablePortal(false);
+            GetComponent<Collider2D>().enabled = false;
+            GetComponent<SpriteRenderer>().enabled = false;
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+
+
+        if (other.CompareTag("Player"))
+        {
+            foreach (Transform child in GameManager.Instance.transform)
+        {
+            if (child.GetComponent<Canvas>() != null || child.GetComponent<UnityEngine.UI.Image>() != null)
+            {
+                child.gameObject.SetActive(true);
+            }
+        }
+            FindObjectOfType<LevelManager>().LoadScene("Main");
         }
     }
 
@@ -40,30 +59,6 @@ public class Portal : MonoBehaviour
         float randomX = Random.Range(-10f, 10f);
         float randomY = Random.Range(-10f, 10f);
         newPosition = new Vector3(randomX, randomY, 0f);
-    }
-
-    private void OnTriggerEnter2D(Collider2D other)
-    {
-        if (other.CompareTag("Player"))
-        {
-            FindObjectOfType<LevelManager>().LoadScene("Main");
-        }
-    }
-
-    private void EnablePortal(bool enabled)
-    {
-        GetComponent<SpriteRenderer>().enabled = enabled;
-        GetComponent<Collider2D>().enabled = enabled;
-    }
-
-    private bool PlayerHasWeapon()
-    {
-        GameObject player = GameObject.FindWithTag("Player");
-        if (player != null)
-        {
-            return player.GetComponentInChildren<Weapon>() != null;
-        }
-        return false;
     }
 
 }

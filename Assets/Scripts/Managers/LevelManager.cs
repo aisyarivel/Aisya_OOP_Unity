@@ -25,7 +25,7 @@ public class LevelManager : MonoBehaviour
 
     private IEnumerator LoadSceneAsync(string sceneName)
     {
-        animator.SetTrigger("StartTransition");
+        //animator.SetTrigger("StartTransition");
         yield return new WaitForSeconds(1f); 
         SceneManager.LoadScene(sceneName);
         animator.SetTrigger("EndTransition");
