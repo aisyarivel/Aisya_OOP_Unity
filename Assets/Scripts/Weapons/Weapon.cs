@@ -5,63 +5,72 @@ using UnityEngine.Pool;
 
 public class Weapon : MonoBehaviour
 {
-    [Header("Weapon Configuration")]
-    [SerializeField] private float firingInterval = 3f;
+    [Header("Weapon Stats")]
+    [SerializeField] private float shootIntervalInSeconds = 3f;
 
-    [Header("Projectile Settings")]
-    public Bullet bulletPrefab;
-    [SerializeField] private Transform spawnPoint;
+    [Header("Bullets")]
+    public Bullet bullet;
+    [SerializeField] private Transform bulletSpawnPoint;
 
-    [Header("Object Pool Settings")]
-    private IObjectPool<Bullet> bulletPool;
+    [Header("Bullet Pool")]
+    private IObjectPool<Bullet> objectPool;
 
-    private readonly bool enableCollectionCheck = false;
-    private readonly int initialPoolSize = 30;
-    private readonly int maxPoolSize = 100;
-    private float cooldownTimer;
-    public Transform parentTransform;  
+    private readonly bool collectionCheck = false;
+    private readonly int defaultCapacity = 30;
+    private readonly int maxSize = 100;
+    private float timer;
+    public Transform parentTransform;
 
     private void Awake()
     {
-        bulletPool = new ObjectPool<Bullet>(CreateBulletInstance, ActivateBullet, DeactivateBullet, DestroyBulletInstance, enableCollectionCheck, initialPoolSize, maxPoolSize);
+        // Initialize the object pool for bullets
+        objectPool = new ObjectPool<Bullet>(CreateBullet, OnGetFromPool, OnReleaseToPool, OnDestroyPooledObject, collectionCheck, defaultCapacity, maxSize);
     }
 
     private void FixedUpdate()
     {
-        cooldownTimer += Time.fixedDeltaTime;
-        if (cooldownTimer >= firingInterval)
-        {
-            cooldownTimer = 0f;
-            Fire();
-        }
+    // Tambahkan delta waktu ke timer
+    timer += Time.fixedDeltaTime;
+
+    // Cek apakah timer lebih besar atau sama dengan shootIntervalInSeconds
+    if (timer >= shootIntervalInSeconds)
+    {
+        // Panggil fungsi Shoot dan reset timer
+        timer = 0f;
+        Shoot();
+    }
     }
 
-    public void Fire()
+
+    public void Shoot()
     {
-        Bullet bulletInstance = bulletPool.Get();
-        bulletInstance.transform.position = spawnPoint.position;
-        bulletInstance.transform.rotation = spawnPoint.rotation;
-        bulletInstance.Initialize();
+        Bullet bulletInstance = objectPool.Get();
+        bulletInstance.transform.position = bulletSpawnPoint.position;
+        bulletInstance.transform.rotation = bulletSpawnPoint.rotation;
+        bulletInstance.Initialize(); // Initialize bullet movement
     }
 
-    private Bullet CreateBulletInstance()
+    private Bullet CreateBullet()
     {
-        Bullet bulletInstance = Instantiate(bulletPrefab, spawnPoint.position, spawnPoint.rotation, parentTransform);
-        bulletInstance.SetPool(bulletPool);
+        Bullet bulletInstance = Instantiate(bullet, bulletSpawnPoint.position, bulletSpawnPoint.rotation, parentTransform);
+        bulletInstance.SetPool(objectPool); // Set the object pool reference in Bullet
         return bulletInstance;
     }
 
-    private void ActivateBullet(Bullet bullet)
+    // Actions when a bullet is taken from the pool
+    private void OnGetFromPool(Bullet bullet)
     {
         bullet.gameObject.SetActive(true);
     }
 
-    private void DeactivateBullet(Bullet bullet)
+    // Actions when a bullet is released back to the pool
+    private void OnReleaseToPool(Bullet bullet)
     {
         bullet.gameObject.SetActive(false);
     }
 
-    private void DestroyBulletInstance(Bullet bullet)
+    // Actions when destroying pooled bullet if the pool is shrinking
+    private void OnDestroyPooledObject(Bullet bullet)
     {
         Destroy(bullet.gameObject);
     }
