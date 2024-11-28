@@ -4,87 +4,97 @@ using UnityEngine;
 
 public class CombatManager : MonoBehaviour
 {
-    public EnemySpawner[] enemySpawners; // Array untuk daftar spawner musuh
-    public float timer = 0; // Timer untuk melacak interval antar gelombang
-    [SerializeField] private float waveInterval = 5f; // Waktu jeda antar gelombang
-    public int waveNumber = 1; // Nomor gelombang saat ini
-    public int totalEnemiesDefeated = 0; // Total musuh yang dikalahkan di semua gelombang
+    public EnemySpawner[] enemySpawners;
+    public GameStats gameStats;  // Array of spawners
+    public float timer = 0; // Timer untuk melacak interval wave
+    [SerializeField] private float waveInterval = 5f; // Waktu antara setiap wave
+    public int waveNumber = 1; // Nomor wave saat ini
+    public int totalEnemiesDefeated = 0;
+    private int totalEnemiesInCurrentWave = 0; // Total musuh yang akan spawn pada wave ini
+    private int totalPoints = 0; // Total musuh yang dikalahkan sepanjang semua wave
+    private int totalEnemiesLeftInWave = 0; 
 
     private void Start()
     {
         waveNumber = 0;
-        // Menautkan setiap spawner ke CombatManager ini
-        foreach (EnemySpawner enemySpawner in enemySpawners)
+        // Menghubungkan CombatManager ke setiap enemy spawner
+        foreach (var enemySpawner in enemySpawners)
         {
             enemySpawner.combatManager = this;
         }
+
+        // Memperbarui informasi UI untuk wave dan musuh yang tersisa
+        gameStats.UpdateWave(waveNumber);
+        gameStats.UpdateEnemiesLeft(totalEnemiesDefeated);
+        gameStats.UpdatePoints(totalPoints);
     }
 
     private void Update()
     {
-        // Jika semua spawner telah selesai, mulai hitung waktu jeda untuk gelombang berikutnya
         if (AllSpawnersFinished())
         {
             timer += Time.deltaTime;
 
-            // Jika waktu jeda sudah cukup, mulai gelombang berikutnya
+            // Jika waktu untuk wave berikutnya telah tercapai
             if (timer >= waveInterval)
             {
-                StartNextWave();
+                ProceedToNextWave();
                 timer = 0;
             }
         }
     }
 
-    private void StartWave()
+    private void ProceedToNextWave()
     {
-        // Mengatur ulang spawner untuk memulai gelombang baru
+        timer = 0;
+        waveNumber++;
+
+        // Reset jumlah musuh untuk wave berikutnya
+        totalEnemiesInCurrentWave = 0;
+        totalEnemiesLeftInWave = 0;
+
+        // Menjumlahkan total musuh yang akan muncul pada wave ini
         foreach (var spawner in enemySpawners)
         {
             if (spawner != null)
             {
-                spawner.defaultSpawnCount = waveNumber; // Mengatur jumlah spawn berdasarkan nomor gelombang
-                spawner.spawnCountMultiplier = 1; // Reset multiplier untuk gelombang baru
-                spawner.isSpawning = true; // Aktifkan proses spawning
+                totalEnemiesInCurrentWave += spawner.spawnCount;
             }
         }
-    }
 
-    private void StartNextWave()
-    {
-        timer = 0;
-        waveNumber++; // Tingkatkan nomor gelombang
-        totalEnemiesDefeated = 0; // Reset jumlah musuh yang dikalahkan untuk gelombang baru
+        // Memperbarui UI untuk wave dan jumlah musuh yang tersisa
+        gameStats.UpdateWave(waveNumber);
+        gameStats.UpdateEnemiesLeft(totalEnemiesInCurrentWave);
 
-        // Mengatur ulang setiap spawner untuk gelombang baru
-        foreach (EnemySpawner enemySpawner in enemySpawners)
+        // Memulai spawning untuk setiap enemy spawner
+        foreach (var enemySpawner in enemySpawners)
         {
             if (enemySpawner != null)
             {
-                enemySpawner.defaultSpawnCount = waveNumber; // Sesuaikan jumlah spawn untuk gelombang baru
-                enemySpawner.spawnCountMultiplier = waveNumber; // Tingkatkan tingkat kesulitan atau jumlah spawn
-                enemySpawner.isSpawning = true; // Mulai ulang proses spawning
+                enemySpawner.StartSpawning();
             }
         }
     }
 
     private bool AllSpawnersFinished()
     {
-        // Memeriksa apakah semua spawner sudah selesai
+        // Mengecek apakah semua spawner telah selesai
         foreach (var spawner in enemySpawners)
         {
             if (spawner != null && spawner.isSpawning)
             {
-                return false; // Jika ada spawner yang masih aktif, gelombang belum selesai
+                return false; // Jika ada spawner yang masih aktif, wave belum selesai
             }
         }
-        return true; // Semua spawner telah selesai
+        return true; // Semua spawner telah selesai spawning
     }
 
-    public void RegisterKill()
+    public void RegisterKill(int enemyLevel)
     {
-        totalEnemiesDefeated++; // Tambahkan jumlah total musuh yang dikalahkan
-        // Opsional: Logika tambahan untuk menangani efek global dari kill
+        totalEnemiesDefeated++;
+        totalPoints += enemyLevel; // Menambahkan poin berdasarkan level musuh
+        // Mengupdate UI dengan jumlah total poin
         Debug.Log($"Total musuh yang dikalahkan: {totalEnemiesDefeated}");
+        gameStats.UpdatePoints(totalPoints);
     }
 }

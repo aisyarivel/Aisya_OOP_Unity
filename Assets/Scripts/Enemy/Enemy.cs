@@ -4,35 +4,35 @@ using UnityEngine;
 
 public class Enemy : MonoBehaviour
 {
-    public int Level; // Level musuh
-    public EnemySpawner enemySpawner; // Referensi ke spawner musuh
-    public CombatManager combatManager; // Referensi ke CombatManager
+    public int Level;
+    public EnemySpawner enemySpawner;
+    public CombatManager combatManager;
 
     private void OnDestroy()
     {
-        // Ketika musuh dihancurkan, panggil fungsi dari EnemySpawner dan CombatManager
+        // Jika enemySpawner dan combatManager ada, lakukan tindakan berikut saat musuh dihancurkan
         if (enemySpawner != null && combatManager != null)
         {
-            enemySpawner.OnDeath(); // Beritahu spawner bahwa musuh telah dikalahkan
-            combatManager.RegisterKill(); // Tambahkan jumlah musuh yang dikalahkan
+            enemySpawner.OnDeath(); // Panggil metode OnDeath() di enemySpawner
+            combatManager.RegisterKill(Level); // Catat kill dengan level musuh saat ini
         }
     }
 
-    private void Start()
+    void Start()
     {
-        // Inisialisasi dasar untuk Enemy
-        gameObject.SetActive(false); // Nonaktifkan Enemy di awal
+        // Inisialisasi musuh agar tidak aktif di awal permainan
+        gameObject.SetActive(false); // Nonaktifkan musuh pada saat start
     }
 
-    private void Update()
+    void Update()
     {
-        // Logika tambahan untuk Enemy bisa diletakkan di sini
+        // Dapat menambahkan logika musuh tambahan di sini jika diperlukan
     }
 
-    // Fungsi untuk mengaktifkan Enemy setelah waktu tertentu
+    // Fungsi untuk mengaktifkan musuh setelah menunggu waktu tertentu
     public IEnumerator ActivateAfterDelay(float delay)
     {
-        yield return new WaitForSeconds(delay); // Tunggu selama waktu yang ditentukan
-        gameObject.SetActive(true); // Aktifkan Enemy
+        yield return new WaitForSeconds(delay); // Tunggu sesuai waktu yang ditentukan
+        gameObject.SetActive(true); // Aktifkan objek musuh setelah delay
     }
 }
